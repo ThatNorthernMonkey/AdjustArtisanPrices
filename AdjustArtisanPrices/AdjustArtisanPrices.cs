@@ -9,14 +9,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using AdjustArtisanPrices.Framework;
 
 namespace AdjustArtisanPrices
 {
     public class AdjustArtisanPrices : Mod
     {
-
         private const int ARTISAN_GOODS = -26;
-        public Config ModConfig { get; set; }
+        private ModConfig ModConfig { get; set; }
 
         public override void Entry(params object[] objects)
         {
@@ -26,7 +26,7 @@ namespace AdjustArtisanPrices
 
             if (!File.Exists(configLocation))
             {
-                ModConfig = new Config();
+                ModConfig = new ModConfig();
 
                 ModConfig.WineIncrease = 1.75;
                 ModConfig.JellyIncrease = 1.25;
@@ -44,7 +44,7 @@ namespace AdjustArtisanPrices
             }
             else
             {
-                ModConfig = JsonConvert.DeserializeObject<Config>(Encoding.UTF8.GetString(File.ReadAllBytes(configLocation)));
+                ModConfig = JsonConvert.DeserializeObject<ModConfig>(Encoding.UTF8.GetString(File.ReadAllBytes(configLocation)));
             }
 
         }
@@ -194,21 +194,6 @@ namespace AdjustArtisanPrices
                     }
                 }
             }
-        }
-
-        public class Config
-        {
-            public double WineIncrease { get; set; }
-            public double JuiceIncrease { get; set; }
-            public double JellyIncrease { get; set; }
-            public double PicklesIncrease { get; set; }
-            public double PaleAleIncrease { get; set;  }
-            public double BeerIncrease { get; set; }
-            public double MayonnaiseIncrease { get; set; }
-            public double DuckMayonnaiseIncrease { get; set; }
-            public double CheeseIncrease { get; set; }
-            public double GoatCheeseIncrease { get; set; }
-            public double ClothIncrease { get; set; }
         }
     }
 }
