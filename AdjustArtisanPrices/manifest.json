@@ -1,0 +1,14 @@
+{
+  "Name": "AdjustArtisanPrices",
+  "Authour": "ThatNorthernMonkey",
+  "Version": {
+    "MajorVersion": 0,
+    "MinorVersion": 0,
+    "PatchVersion": 0,
+    "Build": ""
+  },
+  "Description": "",
+  "UniqueID": "1e36d4ca-c7ef-4dfb-9927-d27a6c3c8bdc",
+  "PerSaveConfigs": false,
+  "EntryDll": "AdjustArtisanPrices.dll"
+}
