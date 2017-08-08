@@ -4,7 +4,7 @@
   "Version": {
     "MajorVersion": 0,
     "MinorVersion": 0,
-    "PatchVersion": 1,
+    "PatchVersion": 2,
     "Build": null
   },
   "Description": "Rebalances artisanal item prices with optional configuration.",
