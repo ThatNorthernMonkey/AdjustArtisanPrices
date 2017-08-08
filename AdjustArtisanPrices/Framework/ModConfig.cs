@@ -2,16 +2,16 @@
 {
     internal class ModConfig
     {
-        public double WineIncrease { get; set; }
-        public double JuiceIncrease { get; set; }
-        public double JellyIncrease { get; set; }
-        public double PicklesIncrease { get; set; }
-        public double PaleAleIncrease { get; set; }
-        public double BeerIncrease { get; set; }
-        public double MayonnaiseIncrease { get; set; }
-        public double DuckMayonnaiseIncrease { get; set; }
-        public double CheeseIncrease { get; set; }
-        public double GoatCheeseIncrease { get; set; }
-        public double ClothIncrease { get; set; }
+        public double WineIncrease { get; set; } = 1.75;
+        public double JuiceIncrease { get; set; } = 1.50;
+        public double JellyIncrease { get; set; } = 1.25;
+        public double PicklesIncrease { get; set; } = 1.25;
+        public double PaleAleIncrease { get; set; } = 0.50;
+        public double BeerIncrease { get; set; } = 0.50;
+        public double MayonnaiseIncrease { get; set; } = 0.75;
+        public double DuckMayonnaiseIncrease { get; set; } = 0.80;
+        public double CheeseIncrease { get; set; } = 0.75;
+        public double GoatCheeseIncrease { get; set; } = 0.75;
+        public double ClothIncrease { get; set; } = 0.75;
     }
 }

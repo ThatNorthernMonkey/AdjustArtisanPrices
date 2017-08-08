@@ -1,196 +1,151 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using AdjustArtisanPrices.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using AdjustArtisanPrices.Framework;
+using SObject = StardewValley.Object;
 
 namespace AdjustArtisanPrices
 {
+    /// <summary>The main entry class.</summary>
     public class AdjustArtisanPrices : Mod
     {
-        private const int ARTISAN_GOODS = -26;
-        private ModConfig ModConfig { get; set; }
+        /*********
+        ** Properties
+        *********/
+        /// <summary>The mod configuration.</summary>
+        private ModConfig Config;
 
-        public override void Entry(params object[] objects)
+
+        /*********
+        ** Public methods
+        *********/
+        /// <summary>The mod entry point, called after the mod is first loaded.</summary>
+        /// <param name="helper">Provides simplified APIs for writing mods.</param>
+        public override void Entry(IModHelper helper)
         {
-            PlayerEvents.InventoryChanged += Event_OnInventoryChanged;
+            this.Config = helper.ReadConfig<ModConfig>();
 
-            var configLocation = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "config.json");
-
-            if (!File.Exists(configLocation))
-            {
-                ModConfig = new ModConfig();
-
-                ModConfig.WineIncrease = 1.75;
-                ModConfig.JellyIncrease = 1.25;
-                ModConfig.PicklesIncrease = 1.25;
-                ModConfig.JuiceIncrease = 1.50;
-                ModConfig.BeerIncrease = 0.50;
-                ModConfig.PaleAleIncrease = 0.50;
-                ModConfig.CheeseIncrease = 0.75;
-                ModConfig.GoatCheeseIncrease = 0.75;
-                ModConfig.MayonnaiseIncrease = 0.75;
-                ModConfig.DuckMayonnaiseIncrease = 0.80;
-                ModConfig.ClothIncrease = 0.75;
-
-                File.WriteAllBytes(configLocation, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ModConfig, Formatting.Indented)));
-            }
-            else
-            {
-                ModConfig = JsonConvert.DeserializeObject<ModConfig>(Encoding.UTF8.GetString(File.ReadAllBytes(configLocation)));
-            }
-
+            PlayerEvents.InventoryChanged += this.PlayerEvents_OnInventoryChanged;
         }
-        public void Event_OnInventoryChanged(object sender, EventArgsInventoryChanged e)
+
+
+        /*********
+        ** Private methods
+        *********/
+        /// <summary>The method invoked when the player's inventory changes.</summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void PlayerEvents_OnInventoryChanged(object sender, EventArgsInventoryChanged e)
         {
-            if(Game1.hasLoadedGame)
+            if (!Context.IsWorldReady)
+                return;
+
+            Dictionary<string, int> parsedObjs = new Dictionary<string, int>();
+
+            foreach (var entry in Game1.objectInformation)
             {
-                var allObjects = Game1.objectInformation;
+                var fields = entry.Value.Split('/');
 
-                Dictionary<string, int> parsedObjs = new Dictionary<string, int>();
+                if (!parsedObjs.ContainsKey(fields[0]) && fields[3].Contains("Basic -75") || fields[3].Contains("Basic -79") || fields[3].Contains("Basic -26"))
+                    parsedObjs.Add(fields[0], Convert.ToInt32(fields[1]));
+            }
 
-                foreach (var item in allObjects)
+            foreach (SObject item in Game1.player.items.OfType<SObject>())
+            {
+                if (item.category != SObject.artisanGoodsCategory)
+                    continue;
+
+                string[] originalItemStringArray = item.Name.Split(' ');
+                string originalItemName = "";
+                string artisanType = "";
+
+                if (originalItemStringArray.Any())
                 {
-                    var stringObjs = item.Value.Split('/');
-
-                    if (!parsedObjs.ContainsKey(stringObjs[0]) && stringObjs[3].Contains("Basic -75") || stringObjs[3].Contains("Basic -79") || stringObjs[3].Contains("Basic -26"))
+                    if (originalItemStringArray.Length == 1)
                     {
-                        parsedObjs.Add(stringObjs[0], Convert.ToInt32(stringObjs[1]));
+                        artisanType = originalItemStringArray[0];
                     }
-                }
 
-                for (int i = 0; i < Game1.player.items.Count; i++)
-                {
-                    if (Game1.player.items[i] != null)
+                    if (originalItemStringArray.Length == 2)
                     {
-                        var item = Game1.player.items[i];
-
-                        if (item.category == ARTISAN_GOODS && item is StardewValley.Object)
+                        if (originalItemStringArray.Contains("Pale"))
+                            artisanType = "Pale Ale";
+                        else if (originalItemStringArray.Contains("Duck"))
+                            artisanType = "Duck Mayonnaise";
+                        else if (originalItemStringArray.Contains("Goat"))
+                            artisanType = "Goat Cheese";
+                        else
                         {
-                            var originalItemStringArray = item.Name.Split(' ');
-                            var originalItemName = "";
-                            var artisanType = "";
-
-                            if (originalItemStringArray.Count() >= 1)
-                            {
-                                
-                                if(originalItemStringArray.Count() == 1)
-                                {
-                                    artisanType = originalItemStringArray[0];
-                                }
-
-                                if (originalItemStringArray.Count() == 2)
-                                {
-                                    if(originalItemStringArray.Contains("Pale"))
-                                    {
-                                        artisanType = "Pale Ale";
-                                    }
-
-                                    else if (originalItemStringArray.Contains("Duck"))
-                                    {
-                                        artisanType = "Duck Mayonnaise";
-                                    }
-
-                                    else if (originalItemStringArray.Contains("Goat"))
-                                    {
-                                        artisanType = "Goat Cheese";
-                                    }
-
-                                    else
-                                    {
-                                        // E.g., Cranberries Wine
-                                        originalItemName = originalItemStringArray[0];
-                                        artisanType = originalItemStringArray[1];
-                                    }
-                                }
-
-                                //E.g., Hot Pepper Jelly
-                                if (originalItemStringArray.Count() == 3)
-                                {
-                                    originalItemName += originalItemStringArray[0];
-                                    originalItemName += " ";
-                                    originalItemName += originalItemStringArray[1];
-
-                                    artisanType = originalItemStringArray[2];
-                                }
-
-                                KeyValuePair<string, int> priceFromObjects;
-
-                                if(!originalItemName.Equals(""))
-                                {
-                                    priceFromObjects = parsedObjs.Select(x => x).Where(x => x.Key.Equals(originalItemName)).FirstOrDefault();
-                                }
-
-                                else
-                                {
-                                    priceFromObjects = parsedObjs.Select(x => x).Where(x => x.Key.Equals(artisanType)).FirstOrDefault();
-                                }                                
-
-                                var originalPrice = priceFromObjects.Value;
-
-                                if (artisanType.Equals("Wine"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.WineIncrease);
-                                }
-
-                                if (artisanType.Equals("Juice"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.JuiceIncrease);
-                                }
-
-                                if (artisanType.Equals("Jelly"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.JellyIncrease);
-                                }
-
-                                if (artisanType.Equals("Pickles"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.PicklesIncrease);
-                                }
-
-                                if (artisanType.Equals("Pale Ale"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.PaleAleIncrease);
-                                }
-
-                                if (artisanType.Equals("Beer"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.BeerIncrease);
-                                }
-
-                                if (artisanType.Equals("Mayonnaise"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.MayonnaiseIncrease);
-                                }
-
-                                if (artisanType.Equals("Duck Mayonnaise"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.DuckMayonnaiseIncrease);
-                                }
-
-                                if (artisanType.Equals("Cheese"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.CheeseIncrease);
-                                }
-
-                                if (artisanType.Equals("Goat Cheese"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.GoatCheeseIncrease);
-                                }
-
-                                if (artisanType.Equals("Cloth"))
-                                {
-                                    item.Cast<StardewValley.Object>().Price = (int)(originalPrice * ModConfig.ClothIncrease);
-                                }
-                            }
+                            // E.g., Cranberries Wine
+                            originalItemName = originalItemStringArray[0];
+                            artisanType = originalItemStringArray[1];
                         }
+                    }
+
+                    //E.g., Hot Pepper Jelly
+                    if (originalItemStringArray.Length == 3)
+                    {
+                        originalItemName += originalItemStringArray[0];
+                        originalItemName += " ";
+                        originalItemName += originalItemStringArray[1];
+
+                        artisanType = originalItemStringArray[2];
+                    }
+
+                    var priceFromObjects = !originalItemName.Equals("")
+                        ? parsedObjs.Select(x => x).FirstOrDefault(x => x.Key.Equals(originalItemName))
+                        : parsedObjs.Select(x => x).FirstOrDefault(x => x.Key.Equals(artisanType));
+
+                    int originalPrice = priceFromObjects.Value;
+
+                    switch (artisanType)
+                    {
+                        case "Wine":
+                            item.Price = (int)(originalPrice * Config.WineIncrease);
+                            break;
+
+                        case "Juice":
+                            item.Price = (int)(originalPrice * Config.JuiceIncrease);
+                            break;
+
+                        case "Jelly":
+                            item.Price = (int)(originalPrice * Config.JellyIncrease);
+                            break;
+
+                        case "Pickles":
+                            item.Price = (int)(originalPrice * Config.PicklesIncrease);
+                            break;
+
+                        case "Pale Ale":
+                            item.Price = (int)(originalPrice * Config.PaleAleIncrease);
+                            break;
+
+                        case "Beer":
+                            item.Price = (int)(originalPrice * Config.BeerIncrease);
+                            break;
+
+                        case "Mayonnaise":
+                            item.Price = (int)(originalPrice * Config.MayonnaiseIncrease);
+                            break;
+
+                        case "Duck Mayonnaise":
+                            item.Price = (int)(originalPrice * Config.DuckMayonnaiseIncrease);
+                            break;
+
+                        case "Cheese":
+                            item.Price = (int)(originalPrice * Config.CheeseIncrease);
+                            break;
+
+                        case "Goat Cheese":
+                            item.Price = (int)(originalPrice * Config.GoatCheeseIncrease);
+                            break;
+
+                        case "Cloth":
+                            item.Price = (int)(originalPrice * Config.ClothIncrease);
+                            break;
                     }
                 }
             }
