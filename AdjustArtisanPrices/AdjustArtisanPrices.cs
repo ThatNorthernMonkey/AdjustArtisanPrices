@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using AdjustArtisanPrices.Framework;
 using StardewModdingAPI;
@@ -17,6 +16,9 @@ namespace AdjustArtisanPrices
         *********/
         /// <summary>The mod configuration.</summary>
         private ModConfig Config;
+
+        /// <summary>The base prices for items by ID.</summary>
+        private readonly IDictionary<int, int> ItemPrices = new Dictionary<int, int>();
 
 
         /*********
@@ -43,112 +45,127 @@ namespace AdjustArtisanPrices
             if (!Context.IsWorldReady)
                 return;
 
-            Dictionary<string, int> parsedObjs = new Dictionary<string, int>();
-
-            foreach (var entry in Game1.objectInformation)
-            {
-                var fields = entry.Value.Split('/');
-
-                if (!parsedObjs.ContainsKey(fields[0]) && fields[3].Contains("Basic -75") || fields[3].Contains("Basic -79") || fields[3].Contains("Basic -26"))
-                    parsedObjs.Add(fields[0], Convert.ToInt32(fields[1]));
-            }
-
             foreach (SObject item in Game1.player.items.OfType<SObject>())
             {
                 if (item.category != SObject.artisanGoodsCategory)
                     continue;
 
-                string[] originalItemStringArray = item.Name.Split(' ');
-                string originalItemName = "";
-                string artisanType = "";
+                // get price info
+                int ingredientPrice = this.GetIngredientPrice(item);
+                decimal multiplier = this.GetMultiplier(item);
+                if (ingredientPrice <= 0 || multiplier == 1)
+                    continue;
 
-                if (originalItemStringArray.Any())
-                {
-                    if (originalItemStringArray.Length == 1)
-                    {
-                        artisanType = originalItemStringArray[0];
-                    }
-
-                    if (originalItemStringArray.Length == 2)
-                    {
-                        if (originalItemStringArray.Contains("Pale"))
-                            artisanType = "Pale Ale";
-                        else if (originalItemStringArray.Contains("Duck"))
-                            artisanType = "Duck Mayonnaise";
-                        else if (originalItemStringArray.Contains("Goat"))
-                            artisanType = "Goat Cheese";
-                        else
-                        {
-                            // E.g., Cranberries Wine
-                            originalItemName = originalItemStringArray[0];
-                            artisanType = originalItemStringArray[1];
-                        }
-                    }
-
-                    //E.g., Hot Pepper Jelly
-                    if (originalItemStringArray.Length == 3)
-                    {
-                        originalItemName += originalItemStringArray[0];
-                        originalItemName += " ";
-                        originalItemName += originalItemStringArray[1];
-
-                        artisanType = originalItemStringArray[2];
-                    }
-
-                    var priceFromObjects = !originalItemName.Equals("")
-                        ? parsedObjs.Select(x => x).FirstOrDefault(x => x.Key.Equals(originalItemName))
-                        : parsedObjs.Select(x => x).FirstOrDefault(x => x.Key.Equals(artisanType));
-
-                    int originalPrice = priceFromObjects.Value;
-
-                    switch (artisanType)
-                    {
-                        case "Wine":
-                            item.Price = (int)(originalPrice * Config.WineIncrease);
-                            break;
-
-                        case "Juice":
-                            item.Price = (int)(originalPrice * Config.JuiceIncrease);
-                            break;
-
-                        case "Jelly":
-                            item.Price = (int)(originalPrice * Config.JellyIncrease);
-                            break;
-
-                        case "Pickles":
-                            item.Price = (int)(originalPrice * Config.PicklesIncrease);
-                            break;
-
-                        case "Pale Ale":
-                            item.Price = (int)(originalPrice * Config.PaleAleIncrease);
-                            break;
-
-                        case "Beer":
-                            item.Price = (int)(originalPrice * Config.BeerIncrease);
-                            break;
-
-                        case "Mayonnaise":
-                            item.Price = (int)(originalPrice * Config.MayonnaiseIncrease);
-                            break;
-
-                        case "Duck Mayonnaise":
-                            item.Price = (int)(originalPrice * Config.DuckMayonnaiseIncrease);
-                            break;
-
-                        case "Cheese":
-                            item.Price = (int)(originalPrice * Config.CheeseIncrease);
-                            break;
-
-                        case "Goat Cheese":
-                            item.Price = (int)(originalPrice * Config.GoatCheeseIncrease);
-                            break;
-
-                        case "Cloth":
-                            item.Price = (int)(originalPrice * Config.ClothIncrease);
-                            break;
-                    }
-                }
+                // recalculate prices
+                item.Price = (int)(ingredientPrice * multiplier);
             }
+        }
+
+        /// <summary>Get the price multiplier for an artisanal item.</summary>
+        /// <param name="item">The artisanal item.</param>
+        private decimal GetMultiplier(SObject item)
+        {
+            // by preserve type
+            switch (item.preserve)
+            {
+                case SObject.PreserveType.Jelly:
+                    return this.Config.JellyIncrease;
+
+                case SObject.PreserveType.Juice:
+                    return this.Config.JuiceIncrease;
+
+                case SObject.PreserveType.Pickle:
+                    return this.Config.PicklesIncrease;
+
+                case Object.PreserveType.Wine:
+                    return this.Config.WineIncrease;
+            }
+
+            // by item ID
+            switch (item.parentSheetIndex)
+            {
+                case 303:
+                    return this.Config.PaleAleIncrease;
+
+                case 346:
+                    return this.Config.BeerIncrease;
+
+                case 306:
+                    return this.Config.MayonnaiseIncrease;
+
+                case 307:
+                    return this.Config.DuckMayonnaiseIncrease;
+
+                case 424:
+                    return this.Config.CheeseIncrease;
+
+                case 426:
+                    return this.Config.GoatCheeseIncrease;
+
+                case 428:
+                    return this.Config.ClothIncrease;
+            }
+
+            // unknown
+            return 1;
+        }
+
+        /// <summary>Get the price of the item used to create the artisanal item.</summary>
+        /// <param name="item">The artisanal item.</param>
+        /// <returns>Returns the ingredient price, or -1 if none found.</returns>
+        private int GetIngredientPrice(SObject item)
+        {
+            // get preserved item
+            if (item.preservedParentSheetIndex != 0)
+                return this.GetPriceOf(item.preservedParentSheetIndex);
+
+            // by item ID
+            switch (item.parentSheetIndex)
+            {
+                // hops => pale ale
+                case 303:
+                    return this.GetPriceOf(304);
+
+                // wheat => beer
+                case 346:
+                    return this.GetPriceOf(262);
+
+                // egg => normal mayonnaise
+                case 306:
+                    return this.GetPriceOf(176);
+
+                // duck egg => duck mayonnaise
+                case 307:
+                    return this.GetPriceOf(442);
+
+                // milk => cheese
+                case 424:
+                    return this.GetPriceOf(184);
+
+                // goat milk => goat cheese
+                case 426:
+                    return this.GetPriceOf(436);
+
+                // wool => cloth
+                case 428:
+                    return this.GetPriceOf(440);
+            }
+
+            return -1;
+        }
+
+        /// <summary>Get the price of the given item.</summary>
+        /// <param name="itemID">The item ID.</param>
+        private int GetPriceOf(int itemID)
+        {
+            // get cached price
+            if (this.ItemPrices.ContainsKey(itemID))
+                return this.ItemPrices[itemID];
+
+            // get price
+            SObject item = new SObject(itemID, 1);
+            this.ItemPrices[item.parentSheetIndex] = item.price;
+            return item.price;
         }
     }
 }
