@@ -14,3 +14,9 @@ c:\users\kiada\documents\visual studio 2015\Projects\SMAPI\AdjustArtisanPrices\A
 c:\users\kiada\documents\visual studio 2015\Projects\SMAPI\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.csprojResolveAssemblyReference.cache
 c:\users\kiada\documents\visual studio 2015\Projects\SMAPI\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.dll
 c:\users\kiada\documents\visual studio 2015\Projects\SMAPI\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.pdb
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.csproj.CoreCompileInputs.cache
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.dll
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.pdb
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\bin\Debug\AdjustArtisanPrices.dll
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\bin\Debug\AdjustArtisanPrices.pdb
+C:\Users\eurio\Desktop\GitsToUpdate\AdjustArtisanPrices\AdjustArtisanPrices\obj\Debug\AdjustArtisanPrices.csprojAssemblyReference.cache
