@@ -30,24 +30,24 @@ namespace AdjustArtisanPrices
         {
             this.Config = helper.ReadConfig<ModConfig>();
 
-            PlayerEvents.InventoryChanged += this.PlayerEvents_OnInventoryChanged;
+            helper.Events.Player.InventoryChanged += this.OnInventoryChanged;
         }
 
 
         /*********
         ** Private methods
         *********/
-        /// <summary>The method invoked when the player's inventory changes.</summary>
+        /// <summary>Raised after items are added or removed to a player's inventory.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void PlayerEvents_OnInventoryChanged(object sender, EventArgsInventoryChanged e)
+        private void OnInventoryChanged(object sender, InventoryChangedEventArgs e)
         {
-            if (!Context.IsWorldReady)
+            if (!Context.IsWorldReady || !e.IsLocalPlayer)
                 return;
 
-            foreach (SObject item in Game1.player.items.OfType<SObject>())
+            foreach (SObject item in Game1.player.Items.OfType<SObject>())
             {
-                if (item.category != SObject.artisanGoodsCategory)
+                if (item.Category != SObject.artisanGoodsCategory)
                     continue;
 
                 // get price info
@@ -66,7 +66,7 @@ namespace AdjustArtisanPrices
         private decimal GetMultiplier(SObject item)
         {
             // by preserve type
-            switch (item.preserve)
+            switch (item.preserve.Value)
             {
                 case SObject.PreserveType.Jelly:
                     return this.Config.JellyIncrease;
@@ -82,7 +82,7 @@ namespace AdjustArtisanPrices
             }
 
             // by item ID
-            switch (item.parentSheetIndex)
+            switch (item.ParentSheetIndex)
             {
                 case 303:
                     return this.Config.PaleAleIncrease;
@@ -116,11 +116,11 @@ namespace AdjustArtisanPrices
         private int GetIngredientPrice(SObject item)
         {
             // get preserved item
-            if (item.preservedParentSheetIndex != 0)
-                return this.GetPriceOf(item.preservedParentSheetIndex);
+            if (item.preservedParentSheetIndex.Value != 0)
+                return this.GetPriceOf(item.preservedParentSheetIndex.Value);
 
             // by item ID
-            switch (item.parentSheetIndex)
+            switch (item.ParentSheetIndex)
             {
                 // hops => pale ale
                 case 303:
@@ -164,8 +164,8 @@ namespace AdjustArtisanPrices
 
             // get price
             SObject item = new SObject(itemID, 1);
-            this.ItemPrices[item.parentSheetIndex] = item.price;
-            return item.price;
+            this.ItemPrices[item.ParentSheetIndex] = item.Price;
+            return item.Price;
         }
     }
 }
